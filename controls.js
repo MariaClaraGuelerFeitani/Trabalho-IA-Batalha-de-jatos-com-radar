@@ -32,9 +32,10 @@ class Controls{
         this.left = (controls.left)?true:false;
         this.right = (controls.right)?true:false;
         this.boom = (controls.boom)?true:false;
+        this.msg = controls.msg;
         //console.log('forward: '+this.forward+' ('+controls.forward+') -- reverse: '+this.reverse+' ('+controls.reverse+') -- '+
         //            'left: '+this.left+' ('+controls.left+') -- right: '+this.right+' ('+controls.right+')'+this.boom+' ('+controls.boom+')');
-        //console.log('MSG: '+this.msg);
+        console.log('MSG: '+this.msg);
     }
 
     updateProlog(x, y, angle, prologID, score, speed, jets = [], booms = [], self=null) {
