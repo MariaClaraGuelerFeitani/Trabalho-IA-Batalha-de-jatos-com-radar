@@ -89,76 +89,134 @@ missilmaisproximo(INFORMACAO, MISSEIS, MENORDISTANCIAAUX, MENORDISTANCIA, VALORX
     missilmaisproximo(INFORMACAO, RestoLista, MENORDISTANCIAAUX, MENORDISTANCIA, VALORXAUX, VALORX, VALORYAUX, VALORY).
     
     
+
+
+
+
+
+angulo_desejado(DIFERENCAX, DIFERENCAY, ANGULO) :-
+    ANGULO is atan2(DIFERENCAX, -DIFERENCAY).
+
+
+
+
+
     
 
-direcaoir(VALORX, VALORY, FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG):-
-    %missil esta a esquerda e abaixo
-    VALORX > 0,
-    VALORY > 0,
+%seleciona o menor ângulo de rotação para o jato, para a esquerda ou para a direita
+normalizar_diferenca(DIFERENCAANGULOS, RESULTADO) :-
+    DIFERENCAANGULOS > pi,
+    !,
+    RESULTADO is DIFERENCAANGULOS - 2*pi.
+
+
+normalizar_diferenca(DIFERENCAANGULOS, RESULTADO) :-
+    DIFERENCAANGULOS < -pi,
+    !,
+    RESULTADO is DIFERENCAANGULOS + 2*pi.
+
+
+normalizar_diferenca(DIFERENCAANGULOS, DIFERENCAANGULOS).
+
+
+
+
+
+
+
+acao(RESULTADO, CONTROLES) :-
+    CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
     
-    %vai para cima e para a direita
+    abs(RESULTADO) =< 0.15,
+    !,
+    FORWARD is 1,
+    REVERSE is 0,
+    LEFT is 0,
+    RIGHT is 0,
+    BOOM is 1,
+    MSG = "Atirar e seguir reto".
+
+
+acao(RESULTADO, CONTROLES) :-
+    CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
+    
+    RESULTADO > 0,
+    !,
     FORWARD is 1,
     REVERSE is 0,
     LEFT is 0,
     RIGHT is 1,
     BOOM is 1,
-    MSG = "Atirar, ir para cima e para a direita".
+    MSG = "Atirar e virar para a direita".
 
 
-direcaoir(VALORX, VALORY, FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG):-
-    %missil esta a esquerda e acima
-    VALORX > 0,
-    VALORY < 0,
+acao(RESULTADO, CONTROLES) :-
+    CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
     
-    %vai para baixo e para a direita
-    FORWARD is 0,
-    REVERSE is 1,
-    LEFT is 0,
-    RIGHT is 1,
-    BOOM is 1,
-    MSG = "Atirar, ir para baixo e para a direita".
-
-
-direcaoir(VALORX, VALORY, FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG):-
-    %missil esta a direita e abaixo
-    VALORX < 0,
-    VALORY > 0,
-    
-    %vai para cima e para a esquerda
+    RESULTADO < 0,
+    !,
     FORWARD is 1,
     REVERSE is 0,
     LEFT is 1,
     RIGHT is 0,
     BOOM is 1,
-    MSG = "Atirar, ir para cima e para a esquerda".
-
-
-direcaoir(VALORX, VALORY, FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG):-
-     %missil esta a direita e acima
-    VALORX < 0,
-    VALORY < 0,
-    
-    %vai para baixo e para a esquerda
-    FORWARD is 0,
-    REVERSE is 1,
-    LEFT is 1,
-    RIGHT is 0,
-    BOOM is 1,
-    MSG = "Atirar, ir para baixo e para a esquerda".
-
-
+    MSG = "Atirar e virar para a esquerda".
     
 
-%obter_controles(INFORMACAO, ADVERSARIOS, MISSEIS, CONTROLES) :-
-%    INFORMACAO = [X, Y, ANGLE, SCORE, SPEED],
-%    CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
-%   
-%    FORWARD is 1,
-%    REVERSE is 0,
-%    LEFT is 1,
-%    RIGHT is 0,
-%    BOOM is 1,
-%    MSG = "Atirar".
+
+
+
+
+
+direcaoir(INFORMACAO, VALORX, VALORY, CONTROLES):-
+    INFORMACAO = [X, Y, ANGLE, SCORE, SPEED],
+    CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
+    
+    angulo_desejado(VALORX, -VALORY, ANGULOMISSIL),
+    
+    DIFERENCADISTANCIA is ANGULOMISSIL - ANGLE, 
+    
+    normalizar_diferenca(DIFERENCADISTANCIA, RESULTADO),
+    
+    acao(RESULTADO, CONTROLES).
+
+
+
+
+    
+
+
+atacar(INFORMACAO, ADVERSARIOS, CONTROLES) :-
+    INFORMACAO = [X, Y, ANGLE, SCORE, SPEED],
+    CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
+    
+    ADVERSARIOS = [[PosX, PosY]],
+	
+    DISTANCIAX is PosX - X,
+    DISTANCIAY is PosY - Y, 
+    
+    angulo_desejado(DISTANCIAX, DISTANCIAY, ANGULOADVERSARIO),
+    
+    DIFERENCADISTANCIA is ANGULOADVERSARIO - ANGLE, 
+    
+    normalizar_diferenca(DIFERENCADISTANCIA, RESULTADO),
+    
+    acao(RESULTADO, CONTROLES).
+
+    
+    
+    
+    
+
+
+obter_controles(INFORMACAO, ADVERSARIOS, MISSEIS, CONTROLES) :-
+    INFORMACAO = [X, Y, ANGLE, SCORE, SPEED],
+    CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
+    
+    ADVERSARIOS = [[PosX, PosY]],
+    
+    atacar(INFORMACAO, ADVERSARIOS, CONTROLES).
+
 
 
 obter_controles(INFORMACAO, ADVERSARIOS, MISSEIS, CONTROLES) :-
@@ -167,32 +225,12 @@ obter_controles(INFORMACAO, ADVERSARIOS, MISSEIS, CONTROLES) :-
     
     missilmaisproximo(INFORMACAO, MISSEIS, 9999999999, MENORDISTANCIA, 0, VALORX, 0, VALORY),
     
-    direcaoir(VALORX, VALORY, FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG).
+    direcaoir(INFORMACAO, VALORX, VALORY, CONTROLES).
     
   
 
-    
-    
-   
-    
-   
-
-
-
-
-
-
-
-
 % Para evitar erros, o jato para:
 obter_controles(_, _, _, [0,0,0,0,0,"nenhuma regra aplicada"]).
-
-
-
-
-
-
-
 
 
 
