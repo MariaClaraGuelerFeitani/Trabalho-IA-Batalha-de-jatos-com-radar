@@ -23,9 +23,6 @@
 %%% Faça seu codigo a partir daqui, sendo necessario sempre ter o predicado:
 %%%% obter_controles([X,Y,ANGLE,SCORE,SPEED], ADVERSARIOS, MISSEIS, [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG]) :- ...
 
-troca(0, 1).
-troca(1, 0).
-
 
 
 
@@ -47,7 +44,19 @@ troca(1, 0).
     %term_string([ADVERSARIOS| [MISSEIS]], MSG).
 
 
+
+
+
+
+
+troca(0, 1).
+troca(1, 0).
+
     
+
+
+
+
 
 missilmaisproximo(_, [], MENORDISTANCIAAUX, MENORDISTANCIA, VALORXAUX, VALORX, VALORYAUX, VALORY):-
     MENORDISTANCIA = MENORDISTANCIAAUX,
@@ -62,8 +71,16 @@ missilmaisproximo(INFORMACAO, MISSEIS, MENORDISTANCIAAUX, MENORDISTANCIA, VALORX
     %calculando a distancia entre o jato e os misseis
     DISTANCIAX is X - PosX,
     DISTANCIAY is Y - PosY,
-    DX is DISTANCIAX * DISTANCIAX,
-    DY is DISTANCIAY * DISTANCIAY,
+    
+    %1024 - quantidade de pixels na horizontal, 768 - quantidade de pixels na vertical
+    MODULODIFERENCAX is abs(DISTANCIAX),
+    MODULODIFERENCAY is abs(DISTANCIAY),
+    
+    DIFX is min(MODULODIFERENCAX, 1024 - MODULODIFERENCAX),
+    DIFY is min(MODULODIFERENCAY, 768 - MODULODIFERENCAY),
+    
+    DX is DIFX * DIFX,
+    DY is DIFY * DIFY,
     VALOR is DX + DY,
     DISTANCIA is sqrt(VALOR),
     
@@ -79,8 +96,16 @@ missilmaisproximo(INFORMACAO, MISSEIS, MENORDISTANCIAAUX, MENORDISTANCIA, VALORX
     %calculando a distancia entre o jato e os misseis
     DISTANCIAX is X - PosX,
     DISTANCIAY is Y - PosY,
-    DX is DISTANCIAX * DISTANCIAX,
-    DY is DISTANCIAY * DISTANCIAY,
+    
+    %1024 - quantidade de pixels na horizontal, 768 - quantidade de pixels na vertical
+    MODULODIFERENCAX is abs(DISTANCIAX),
+    MODULODIFERENCAY is abs(DISTANCIAY),
+    
+    DIFX is min(MODULODIFERENCAX, 1024 - MODULODIFERENCAX),
+    DIFY is min(MODULODIFERENCAY, 768 - MODULODIFERENCAY),
+    
+    DX is DIFX * DIFX,
+    DY is DIFY * DIFY,
     VALOR is DX + DY,
     DISTANCIA is sqrt(VALOR),
     
@@ -101,22 +126,17 @@ angulo_desejado(DIFERENCAX, DIFERENCAY, ANGULO) :-
 
 
 
-    
-
-%seleciona o menor ângulo de rotação para o jato, para a esquerda ou para a direita
-normalizar_diferenca(DIFERENCAANGULOS, RESULTADO) :-
-    DIFERENCAANGULOS > pi,
-    !,
-    RESULTADO is DIFERENCAANGULOS - 2*pi.
 
 
-normalizar_diferenca(DIFERENCAANGULOS, RESULTADO) :-
-    DIFERENCAANGULOS < -pi,
-    !,
-    RESULTADO is DIFERENCAANGULOS + 2*pi.
+ajustar_toroidal(DIFERENCA, TAMANHO, RESULTADO) :-
+    DIFERENCA > TAMANHO / 2,
+    RESULTADO is DIFERENCA - TAMANHO.
 
+ajustar_toroidal(DIFERENCA, TAMANHO, RESULTADO) :-
+    DIFERENCA < -TAMANHO / 2,
+    RESULTADO is DIFERENCA + TAMANHO.
 
-normalizar_diferenca(DIFERENCAANGULOS, DIFERENCAANGULOS).
+ajustar_toroidal(DIFERENCA, _, DIFERENCA).
 
 
 
@@ -128,9 +148,9 @@ acao(RESULTADO, CONTROLES) :-
     CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
     
     abs(RESULTADO) =< 0.15,
-    !,
-    FORWARD is 1,
-    REVERSE is 0,
+    
+    FORWARD is 0,
+    REVERSE is 1,
     LEFT is 0,
     RIGHT is 0,
     BOOM is 1,
@@ -141,7 +161,7 @@ acao(RESULTADO, CONTROLES) :-
     CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
     
     RESULTADO > 0,
-    !,
+    
     FORWARD is 1,
     REVERSE is 0,
     LEFT is 0,
@@ -154,7 +174,10 @@ acao(RESULTADO, CONTROLES) :-
     CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
     
     RESULTADO < 0,
-    !,
+    
+    random_between(0,1,ALEATORIO),
+    troca(ALEATORIO, OPOSTO),
+    
     FORWARD is 1,
     REVERSE is 0,
     LEFT is 1,
@@ -172,13 +195,18 @@ direcaoir(INFORMACAO, VALORX, VALORY, CONTROLES):-
     INFORMACAO = [X, Y, ANGLE, SCORE, SPEED],
     CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
     
-    angulo_desejado(VALORX, -VALORY, ANGULOMISSIL),
+    %ajustar a mira do jato
+    DX is -VALORX,
+    DY is -VALORY,
+    
+    ajustar_toroidal(DX, 1024, DIFX),
+    ajustar_toroidal(DY, 768, DIFY),
+    
+    angulo_desejado(-DIFX, -DIFY, ANGULOMISSIL),
     
     DIFERENCADISTANCIA is ANGULOMISSIL - ANGLE, 
     
-    normalizar_diferenca(DIFERENCADISTANCIA, RESULTADO),
-    
-    acao(RESULTADO, CONTROLES).
+    acao(DIFERENCADISTANCIA, CONTROLES).
 
 
 
@@ -195,30 +223,32 @@ atacar(INFORMACAO, ADVERSARIOS, CONTROLES) :-
     DISTANCIAX is PosX - X,
     DISTANCIAY is PosY - Y, 
     
-    angulo_desejado(DISTANCIAX, DISTANCIAY, ANGULOADVERSARIO),
+    ajustar_toroidal(DISTANCIAX, 1024, DIFERENCAX),
+    ajustar_toroidal(DISTANCIAY, 768, DIFERENCAY),
+    
+    angulo_desejado(DIFERENCAX, DIFERENCAY, ANGULOADVERSARIO),
     
     DIFERENCADISTANCIA is ANGULOADVERSARIO - ANGLE, 
     
-    normalizar_diferenca(DIFERENCADISTANCIA, RESULTADO),
-    
-    acao(RESULTADO, CONTROLES).
+    acao(DIFERENCADISTANCIA, CONTROLES).
 
     
     
     
-    
+   
 
 
 obter_controles(INFORMACAO, ADVERSARIOS, MISSEIS, CONTROLES) :-
     INFORMACAO = [X, Y, ANGLE, SCORE, SPEED],
     CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
     
+    %só um adersário
     ADVERSARIOS = [[PosX, PosY]],
     
     atacar(INFORMACAO, ADVERSARIOS, CONTROLES).
 
-
-
+    
+    
 obter_controles(INFORMACAO, ADVERSARIOS, MISSEIS, CONTROLES) :-
     INFORMACAO = [X, Y, ANGLE, SCORE, SPEED],
     CONTROLES = [FORWARD, REVERSE, LEFT, RIGHT, BOOM, MSG],
